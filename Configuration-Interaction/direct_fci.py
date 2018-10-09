@@ -15,8 +15,10 @@ __copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-05-26"
 
+import sys
 import time
 import numpy as np
+from scipy.sparse.linalg import eigsh
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
@@ -30,18 +32,18 @@ psi4.core.set_output_file('output.dat', False)
 # Memory for numpy in GB
 numpy_memory = 2
 
-mol = psi4.geometry("""
-O
-H 1 1.1
-H 1 1.1 2 104
-symmetry c1
-""")
-
 # mol = psi4.geometry("""
 # O
-# C 1 1.128
+# H 1 1.1
+# H 1 1.1 2 104
 # symmetry c1
 # """)
+
+mol = psi4.geometry("""
+O
+C 1 1.128
+symmetry c1
+""")
 
 
 
@@ -94,7 +96,7 @@ H *= (spin_ind.reshape(-1, 1) == spin_ind)
 
 print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 
-from helper_CI import Determinant, HamiltonianGenerator
+from direct_helper_ci import Determinant, HamiltonianGenerator
 from itertools import combinations
 
 print('Generating %d Full CI Determinants...' % (nDet))
@@ -118,7 +120,8 @@ print('Diagonalizing Hamiltonian Matrix...')
 
 t = time.time()
 
-e_fci, wavefunctions = np.linalg.eigh(Hamiltonian_matrix)
+# e_fci, wavefunctions = np.linalg.eigh(Hamiltonian_matrix)
+e_fci, wavefunctions = eigsh(Hamiltonian_matrix)
 print('..finished diagonalization in %.3f seconds.\n' % (time.time() - t))
 
 fci_mol_e = e_fci[0] + mol.nuclear_repulsion_energy()
@@ -130,7 +133,7 @@ print('FCI correlation:    % 16.10f' % (fci_mol_e - scf_e))
 print('Total FCI energy:   % 16.10f' % (fci_mol_e))
 
 gs_wf = wavefunctions[:, [0]]
-with open('fci_vec_h2o.dat', 'w') as fid:
+with open('fci_vec_co.dat', 'w') as fid:
     for idx, det in enumerate(detList):
         bits = np.zeros(nmo * 2, dtype=int)
         alpha_bits, beta_bits = det.getOrbitalIndexLists()
